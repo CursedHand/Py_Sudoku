@@ -1,7 +1,5 @@
-from turtle import position
-from types import NoneType
 from fltk import *
-
+import QoLfunctions
 
 #BUG LIST
 #FIXED --> drawn lines flicker (force lines to be on top?)
@@ -20,6 +18,7 @@ class Sudoku(Fl_Window):
 
         self.current_widget = self.grid[0][0]
         self.current_selection = None
+        self.old_selection = None
 
     def create_menu(self):
         self.menu = Fl_Menu_Bar(0,0,self.width,(self.height-self.width))
@@ -35,9 +34,23 @@ class Sudoku(Fl_Window):
             row_list = []
             for row in range(9):
                 if col == 2 or col == 5:
-                    row_list.append(Fl_Input((box_size*col), (box_size*row)+(self.height-self.width), box_size-2, box_size))
+                    if row != 2 and row != 5 and row != 3 and row != 6:
+                        row_list.append(Fl_Input((box_size*col), (box_size*row)+(self.height-self.width), box_size-2, box_size))
+                    elif row == 2 or row == 5:
+                        row_list.append(Fl_Input((box_size*col), (box_size*row)+(self.height-self.width), box_size-2, box_size-2))
+                    else:
+                        row_list.append(Fl_Input((box_size*col), (box_size*row)+(self.height-self.width)+2, box_size-2, box_size-2))
                 elif col == 3 or col == 6:
-                    row_list.append(Fl_Input((box_size*col)+2, (box_size*row)+(self.height-self.width), box_size-2, box_size))
+                    if row != 3 and row != 6 and row != 2 and row != 5:
+                        row_list.append(Fl_Input((box_size*col)+2, (box_size*row)+(self.height-self.width), box_size-2, box_size))
+                    elif row == 3 or row == 6:
+                        row_list.append(Fl_Input((box_size*col)+2, ((box_size*row)+(self.height-self.width))+2, box_size-2, box_size-2))
+                    else:
+                        row_list.append(Fl_Input((box_size*col)+2, ((box_size*row)+(self.height-self.width)), box_size-2, box_size-2))
+                elif row == 2 or row == 5:
+                    row_list.append(Fl_Input((box_size*col), (box_size*row)+(self.height-self.width), box_size, box_size-2))
+                elif row == 3 or row == 6:
+                    row_list.append(Fl_Input((box_size*col), (box_size*row)+(self.height-self.width)+2, box_size, box_size-2))
                 else:
                     row_list.append(Fl_Input((box_size*col), (box_size*row)+(self.height-self.width), box_size, box_size))
                 row_list[-1].maximum_size(3)
@@ -132,45 +145,52 @@ class Sudoku(Fl_Window):
             fl_line(0, int((self.width)/3)*(x+1)+(self.height-self.width), self.width, int((self.width)/3)*(x+1)+(self.height-self.width))
 
     def handle(self, event):
-
-
-
         for row_num, row in enumerate(self.grid):       #adds button to respective sqare, row, and collum list. Left to right, top to bottom
             for col_num, box in enumerate(row):
-                self.center_text(box)
+                QoLfunctions.center_text(self, box)
                 if box.color() == self.select_color:
-                    self.current_selection = [row_num, col_num]
+                    if self.current_selection != [row_num, col_num]:
+                        self.old_selection = self.current_selection
+                        self.current_selection = [row_num, col_num]
+
 
         
         below_mouse = Fl_belowmouse()
-        if below_mouse != None:
-            if self.current_widget != below_mouse and below_mouse.y() >= (self.height-self.width):
-                self.current_widget.color(FL_WHITE)
-                self.current_widget.redraw()
-                self.current_widget = below_mouse
-                self.current_widget.color(self.select_color)
-                self.current_widget.redraw()
-        if self.current_selection != None:
+
+        if below_mouse != None and below_mouse.y() >= (self.height-self.width):
+            self.current_widget.color(FL_WHITE)
+            self.current_widget.redraw()
+
+            if self.old_selection != None:
+                for x in self.colums[self.old_selection[0]]:
+                    x.color(FL_WHITE)
+                    x.redraw()
+                for y in self.rows[self.old_selection[1]]:
+                    y.color(FL_WHITE)
+                    y.redraw()
+
+            
+
+            print(type(self.colums))
+            if self.current_selection != None:
+                for count, x in enumerate(self.colums[self.current_selection[0]]):
+                    if count != self.current_selection[1]:
+                        x.color(self.secondary_color)
+                        x.redraw()
+
+                for count, y in enumerate(self.rows[self.current_selection[1]]):
+                    if count != self.current_selection[0]:
+                        y.color(self.secondary_color)
+                        y.redraw()
+
+
+
+            self.current_widget = below_mouse
+            self.current_widget.color(self.select_color)
+            self.current_widget.redraw()
             print(self.current_selection)
 
         return super().handle(event)
-
-
-    def center_text(self, box):
-        inp = box.value()
-        if " " not in inp and inp != "":
-            box.value("  " + inp)
-        elif inp == "" or inp == " ":
-            box.value("  ")
-        elif len(inp) == 3 and inp[-1] == " ":
-            if inp[0] != " ":
-                box.value("  " + inp[0])
-            elif inp[1] != " ":
-                box.value("  " + inp[1])
-        inp = box.value()
-        digits = ["1","2","3","4","5","6","7","8","9"]
-        if str(inp[-1]) not in digits:
-            box.value("  ")     
 
 
 sudoku = Sudoku(0,0,711,761, "Sudoku")  #width should be divisable by 9 & height must be greater or = to width
