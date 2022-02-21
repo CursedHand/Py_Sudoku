@@ -6,19 +6,23 @@ import GenerateGrid
 import Backtrackingtest
 
 #BUG LIST
-#FIXED --> drawn lines flicker (force lines to be on top?)
+#   None
+
+#FIXED --> drawn lines flicker
 
 
 class Sudoku(Fl_Window):
     def __init__ (self,x,y,w,h, name):
         Fl_Window.__init__(self,x,y,w,h,name)
         self.width, self.height = w, h
+        self.margin = 2 #Space betweeen center of lines and boxes
+    
         self.select_color = fl_rgb_color(0,128,0)
         self.secondary_color = fl_rgb_color(0,255,127)
         self.grid_color = fl_rgb_color(50,205,50)
 
         self.create_menu()
-        self.grid = GenerateGrid.create_grid(self.width, self.height)
+        self.grid = GenerateGrid.create_grid(self.width, self.height, self.margin)
         self.rows, self.colums, self.squares = GenerateGrid.fill_grid(self.grid)
 
         self.current_widget = self.grid[0][0]
@@ -50,8 +54,7 @@ class Sudoku(Fl_Window):
 
 
     def solve(self, wid, empty):
-        formatted_grid = self.printgrid()
-        #print(formatted_grid)
+        formatted_grid = self.formatgrid()
         solved = Backtrackingtest.backfill(formatted_grid)
         if solved == False:
             fl_message("Sudoku cannot be solved!")
@@ -62,7 +65,7 @@ class Sudoku(Fl_Window):
                         self.rows[y][x].textcolor(FL_RED)
                         self.rows[y][x].value("  " + item)
 
-    def printgrid(self):
+    def formatgrid(self):
         grid = []
         for y in self.rows:
             row = []
@@ -75,41 +78,7 @@ class Sudoku(Fl_Window):
         return grid
 
     def resize_cb(self, button, size):
-        if size == 0: #Small
-            self.size(450, 500)
-            self.width, self.height = 450, 500
-            for row in self.grid:
-                for box in row:
-                    box.textsize(25)
-        elif size == 1: #Medium
-            self.size(711, 761)
-            self.width, self.height = 711, 761
-            for row in self.grid:
-                for box in row:
-                    box.textsize(43)
-        else:   #Large
-            self.size(918, 968)
-            self.width, self.height = 918, 968
-            for row in self.grid:
-                for box in row:
-                    box.textsize(55)
-        self.current_size = size 
-        boxsize = int(self.width/9)
-        c = 0
-        for row in self.grid:
-            r = 0
-            for but in row:
-                if c == 2 or c == 5:
-                    but.resize(boxsize*c, boxsize*r+(self.height-self.width), boxsize-2, boxsize)
-                elif c == 3 or c == 6:
-                    but.resize((boxsize*c)+2, boxsize*r+(self.height-self.width), boxsize-2, boxsize)
-                else:
-                    but.resize(boxsize*c, boxsize*r+(self.height-self.width), boxsize, boxsize)
-                r += 1
-            c += 1
-        self.menu.size(self.width, self.height-self.width)
-        self.redraw()
-
+        self.width, self.height = GenerateGrid.resize_cb(self, size, self.grid, self.menu, self.width, self.height, self.margin)
 
     def draw(self):
         Fl_Window.draw(self)
@@ -143,9 +112,9 @@ class Sudoku(Fl_Window):
         return super().handle(event)
 
 
+
+
 sudoku = Sudoku(0,0,711,761, "Sudoku")  #width should be divisable by 9 & height must be greater or = to width
-
-
 sudoku.begin()
 sudoku.show()
 Fl.run()
